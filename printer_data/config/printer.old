@@ -1,0 +1,834 @@
+
+[include mmu/addons/mmu_erec_cutter.cfg]
+[include mmu/base/*.cfg]
+[include mmu/optional/client_macros.cfg]
+
+[include eddyng.cfg]
+[include nozzle-scrub.cfg]
+
+[exclude_object]
+
+# This file contains common pin mappings for the LDO Voron 2.4 Rev. D kit
+# See docs/Config_Reference.md for a description of parameters.
+
+## Voron Design VORON 2.4 250/300/350mm Leviathan V1.1 + Nitehawk-SB config
+
+## *** THINGS TO CHANGE/CHECK: ***
+## MCU paths                            [mcu] section
+## Thermistor types                     [extruder] and [heater_bed] sections - See https://www.klipper3d.org/Config_Reference.html#common-thermistors for common thermistor types
+## Z Endstop Switch location            [safe_z_home] section
+## Homing end position                  [gcode_macro G32] section
+## Z Endstop Switch  offset for Z0      [stepper_z] section
+## Probe points                         [quad_gantry_level] section
+## Min & Max gantry corner postions     [quad_gantry_level] section
+## PID tune                             [extruder] and [heater_bed] sections
+## Probe pin                            [probe] section
+## Fine tune E steps                    [extruder] section
+[include fluidd.cfg]
+
+[mcu]
+##  Obtain definition by "ls -l /dev/serial/by-id/" then unplug to verify
+##--------------------------------------------------------------------
+serial: /dev/serial/by-id/usb-Klipper_stm32f446xx_39003F000251303532383235-if00
+restart_method: command
+##--------------------------------------------------------------------
+
+[mcu nhk]
+##  Obtain definition by "ls -l /dev/serial/by-id/" then unplug to verify
+##--------------------------------------------------------------------
+#serial: /dev/serial/by-id/usb-Klipper_rp2040_4E363334320B267D-if00
+serial: /dev/serial/by-id/usb-Klipper_rp2040_3033393834041284-if00
+restart_method: command
+##--------------------------------------------------------------------
+
+
+[input_shaper]
+shaper_freq_x: 54.8
+shaper_type_x: mzv
+shaper_freq_y: 38.2
+shaper_type_y: mzv
+
+[printer]
+kinematics: corexy
+max_velocity: 300  
+max_accel: 4000
+max_z_velocity: 15          #Max 15 for 12V TMC Drivers, can increase for 24V
+max_z_accel: 350
+square_corner_velocity: 5.0
+
+#####################################################################
+#   X/Y Stepper Settings
+#####################################################################
+
+##  B Stepper - Left
+##  Connected to HV STEPPER 0
+##  Endstop connected to X-ENDSTOP
+[stepper_x]
+step_pin: PB10
+dir_pin: !PB11
+enable_pin: !PG0
+rotation_distance: 40
+microsteps: 32
+full_steps_per_rotation:400  #set to 200 for 1.8 degree stepper
+endstop_pin: PC1
+position_min: 0
+##--------------------------------------------------------------------
+
+##  Uncomment below for 250mm build
+#position_endstop: 250
+#position_max: 250
+
+##  Uncomment for 300mm build
+#position_endstop: 300
+#position_max: 300
+
+##  Uncomment for 350mm build
+position_endstop: 350
+position_max: 350
+
+##--------------------------------------------------------------------
+homing_speed: 25   #Max 100
+homing_retract_dist: 5
+homing_positive_dir: true
+
+##  Make sure to update below for your relevant driver (2209 or 5160)
+[tmc5160 stepper_x]
+cs_pin: PE15
+spi_bus: spi4
+#diag0_pin: ^!PG1
+interpolate: false
+run_current: 0.8
+sense_resistor: 0.075
+stealthchop_threshold: 0
+
+##  A Stepper - Right
+##  Connected to HV STEPPER 1
+##  Endstop connected to Y-ENDSTOP
+[stepper_y]
+step_pin: PF15
+dir_pin: !PF14
+enable_pin: !PE9
+rotation_distance: 40
+microsteps: 32
+full_steps_per_rotation:400  #set to 200 for 1.8 degree stepper
+endstop_pin: PC2
+position_min: 0
+##--------------------------------------------------------------------
+
+##  Uncomment for 250mm build
+#position_endstop: 250
+#position_max: 250
+
+##  Uncomment for 300mm build
+#position_endstop: 300
+#position_max: 300
+
+##  Uncomment for 350mm build
+position_endstop: 350
+position_max: 350
+
+##--------------------------------------------------------------------
+homing_speed: 25  #Max 100
+homing_retract_dist: 5
+homing_positive_dir: true
+
+##  Make sure to update below for your relevant driver (2209 or 5160)
+[tmc5160 stepper_y]
+cs_pin: PE11
+spi_bus: spi4
+#diag0_pin: ^!PE10
+interpolate: false
+run_current: 0.8
+sense_resistor: 0.075
+stealthchop_threshold: 0
+ 
+#####################################################################
+#   Z Stepper Settings
+#####################################################################
+
+## Z0 Stepper - Front Left
+##  Connected to STEPPER 0
+##  Endstop connected to Z-ENDSTOP
+[stepper_z]
+step_pin: PD4
+dir_pin: !PD3
+enable_pin: !PD7
+rotation_distance: 40
+gear_ratio: 80:16  
+microsteps: 32
+# endstop_pin: PC3
+endstop_pin: probe:z_virtual_endstop
+
+##  Z-position of nozzle (in mm) to z-endstop trigger point relative to print surface (Z0)
+##  (+) value = endstop above Z0, (-) value = endstop below
+##  Increasing position_endstop brings nozzle closer to the bed
+##  After you run Z_ENDSTOP_CALIBRATE, position_endstop will be stored at the very end of your config
+# position_endstop: -0.5
+##--------------------------------------------------------------------
+
+##  Uncomment below for 250mm build
+#position_max: 230
+
+##  Uncomment below for 300mm build
+#position_max: 280
+
+##  Uncomment below for 350mm build
+position_max: 330
+
+##--------------------------------------------------------------------
+position_min: -5
+homing_speed: 8
+second_homing_speed: 3
+homing_retract_dist: 3
+
+##  Make sure to update below for your relevant driver (2209 or 5160)
+[tmc2209 stepper_z]
+uart_pin: PD5
+#diag_pin: ^!PD6
+interpolate: false
+run_current: 0.8
+sense_resistor: 0.110
+stealthchop_threshold: 0
+
+##  Z1 Stepper - Rear Left
+##  Connected to STEPPER 1
+[stepper_z1]
+step_pin: PC12
+dir_pin: PC11
+enable_pin: !PD2
+rotation_distance: 40
+gear_ratio: 80:16 
+microsteps: 32
+
+##  Make sure to update below for your relevant driver (2209 or 5160)
+[tmc2209 stepper_z1]
+uart_pin: PD0
+#diag_pin: ^!PD1
+interpolate: false
+run_current: 0.8
+sense_resistor: 0.110
+stealthchop_threshold: 0
+
+##  Z2 Stepper - Rear Right
+##  Connected to STEPPER 2
+[stepper_z2]
+step_pin: PC9
+dir_pin: !PC8
+enable_pin: !PC10
+rotation_distance: 40
+gear_ratio: 80:16 
+microsteps: 32
+
+##  Make sure to update below for your relevant driver (2209 or 5160)
+[tmc2209 stepper_z2]
+uart_pin: PA8
+#diag_pin: ^!PA15
+interpolate: false
+run_current: 0.8
+sense_resistor: 0.110
+stealthchop_threshold: 0
+
+##  Z3 Stepper - Front Right
+##  Connected to STEPPER 3
+[stepper_z3]
+step_pin: PG7
+dir_pin: PG6
+enable_pin: !PC7
+rotation_distance: 40
+gear_ratio: 80:16 
+microsteps: 32
+
+##  Make sure to update below for your relevant driver (2209 or 5160)
+[tmc2209 stepper_z3]
+uart_pin: PG8
+#diag_pin: ^!PC6
+interpolate: false
+run_current: 0.8
+sense_resistor: 0.110
+stealthchop_threshold: 0
+
+[gcode_macro ZUP]
+gcode:
+    SET_GCODE_OFFSET Z_ADJUST=0.01 MOVE=1
+
+[gcode_macro ZDOWN]
+gcode:
+    SET_GCODE_OFFSET Z_ADJUST=-0.01 MOVE=1
+    
+#####################################################################
+#   Extruder
+#####################################################################
+
+##  Connected to STEPPER 0
+##  Heater - HEATER
+##  Thermistor - TH0
+[extruder]
+step_pin: nhk:gpio23
+dir_pin: nhk:gpio24
+enable_pin: !nhk:gpio25
+##  Update value below when you perform extruder calibration
+##  If you ask for 100mm of filament, but in reality it is 98mm:
+##  rotation_distance = <previous_rotation_distance> * <actual_extrude_distance> / 100
+##  22.6789511 is a good starting point
+rotation_distance: 22.6789511   #Bondtech 5mm Drive Gears
+##  Update Gear Ratio depending on your Extruder Type
+##  Use 50:10 for Stealthburner/Clockwork 2
+##  Use 50:17 for Afterburner/Clockwork (BMG Gear Ratio)
+##  Use 80:20 for M4, M3.1
+gear_ratio: 50:10               #BMG Gear Ratio
+microsteps: 32
+full_steps_per_rotation: 200    #200 for 1.8 degree, 400 for 0.9 degree
+nozzle_diameter: 0.400
+filament_diameter: 1.75
+heater_pin: nhk:gpio9
+## Check what thermistor type you have. See https://www.klipper3d.org/Config_Reference.html#common-thermistors for common thermistor types.
+## Use "Generic 3950" for NTC 100k 3950 thermistors
+sensor_type: ATC Semitec 104NT-4-R025H42G
+sensor_pin: nhk:gpio29
+pullup_resistor: 2200
+min_temp: 10
+max_temp: 270
+max_power: 1.0
+min_extrude_temp: 170
+control = pid
+pid_kp = 26.213
+pid_ki = 1.304
+pid_kd = 131.721
+##  Try to keep pressure_advance below 1.0
+#pressure_advance: 0.05
+##  Default is 0.040, leave stock
+#pressure_advance_smooth_time: 0.040
+
+##  E0 on MOTOR6
+##  Connected to STEPPER 4
+[tmc2209 extruder]
+uart_pin: nhk:gpio0
+tx_pin: nhk:gpio1
+interpolate: false
+run_current: 0.5
+sense_resistor: 0.100
+stealthchop_threshold: 0
+
+
+#####################################################################
+#   Bed Heater
+#####################################################################
+
+[heater_bed]
+##  SSR Pin - HEATBED
+##  Thermistor - TH1
+heater_pin: PG11
+sensor_type: ATC Semitec 104NT-4-R025H42G
+sensor_pin: PA2
+pullup_resistor: 2200
+##  Adjust Max Power so your heater doesn't warp your bed. Rule of thumb is 0.4 watts / cm^2 .
+max_power: 0.6
+min_temp: 0
+max_temp: 130
+control: pid
+pid_kp: 58.437
+pid_ki: 2.347
+pid_kd: 363.769
+
+#####################################################################
+#   Probe
+#####################################################################
+
+# [probe]
+# ##  Inductive Probe
+# ##  Connected to Z-PROBE
+# ##  This probe is not used for Z height, only Quad Gantry Leveling
+# pin: nhk:gpio10
+# x_offset: 0
+# y_offset: 25.0
+# z_offset: 0
+# speed: 10.0
+# samples: 3
+# samples_result: median
+# sample_retract_dist: 3.0
+# samples_tolerance: 0.006
+# samples_tolerance_retries: 3
+
+#####################################################################
+#   Fan Control
+#####################################################################
+
+[fan]
+##  Print Cooling Fan - FAN0
+pin: nhk:gpio6
+##tachometer_pin: PB0
+kick_start_time: 0.5
+##  Depending on your fan, you may need to increase this value
+##  if your fan will not start. Can change cycle_time (increase)
+##  if your fan is not able to slow down effectively
+off_below: 0.10
+
+[heater_fan hotend_fan]
+##  Hotend Fan - FAN1
+pin: nhk:gpio5
+#tachometer_pin: PB4
+max_power: 1.0
+kick_start_time: 0.5
+heater: extruder
+heater_temp: 50.0
+##  If you are experiencing back flow, you can reduce fan_speed
+#fan_speed: 1.0
+
+[controller_fan controller_fan]
+##  Controller fan - FAN2
+pin: PF7
+##tachometer_pin: PF6
+kick_start_time: 0.5
+heater: heater_bed
+fan_speed: 0.5
+
+[fan_generic exhaust_fan]
+##  Exhaust fan - FAN3
+pin: PF9
+#tachometer_pin: PF8
+# max_power: 1.0
+# shutdown_speed: 0.0
+kick_start_time: 5.0
+# heater: heater_bed
+# heater_temp: 60
+# fan_speed: 0.5
+
+[fan_generic nevermore]
+# nevermore filter
+pin: PB3
+kick_start_time: 0.5  #off_below: 0.1
+
+#####################################################################
+#   Filament sensor
+#####################################################################
+
+#[filament_switch_sensor Filament]
+#pause_on_runout: True
+#runout_gcode: M600
+#insert_gcode:
+#event_delay: 3.0
+#pause_delay: 0.5
+#switch_pin: !PC0
+
+#####################################################################
+#   LED Control
+#####################################################################
+
+## Chamber Lighting (Optional)
+## Connected to LED-STRIP
+[output_pin caselight]
+pin: PE6
+pwm:true
+hardware_pwm: False
+value: 1.00 #startup value
+shutdown_value: 0
+# value:1
+cycle_time: 0.00025
+
+## Connected to led (nitehawk sb)
+[output_pin pcb_led]
+pin: !nhk:gpio8
+
+## Connected to NEOPIXEL (nitehawk sb)
+[neopixel rgb_light]
+pin: nhk:gpio7
+chain_count: 3
+color_order: GRBW
+initial_RED: 0.0
+initial_GREEN: 0.0
+initial_BLUE: 0.0
+initial_WHITE: 0.0
+
+
+#####################################################################
+#   Accelerometer
+#####################################################################
+[adxl345]
+cs_pin: nhk:gpio21
+spi_software_sclk_pin: nhk:gpio18
+spi_software_mosi_pin: nhk:gpio20
+spi_software_miso_pin: nhk:gpio19
+
+[resonance_tester]
+accel_chip: adxl345
+accel_per_hz: 100
+sweeping_accel: 400
+sweeping_period: 0
+probe_points:
+    175, 175, 20
+
+##--------------------------------------------------------------------
+
+#####################################################################
+#   TH
+# #####################################################################
+[temperature_sensor chamber_temp]
+## Chamber Temperature - T1
+sensor_type: ATC Semitec 104NT-4-R025H42G
+sensor_pin: nhk:gpio28
+min_temp: 0
+max_temp: 100
+gcode_id: chamber_th
+
+[thermistor CMFB103F3950FANT]
+temperature1: 0.0
+resistance1: 32116.0
+temperature2: 40.0
+resistance2: 5309.0
+temperature3: 80.0
+resistance3: 1228.0
+
+[temperature_sensor nh_temp]
+## Nitehawk PCB Sensor
+sensor_type: CMFB103F3950FANT
+sensor_pin: nhk:gpio26
+pullup_resistor: 2200
+min_temp: 0
+max_temp: 100
+gcode_id: nh_th
+
+#####################################################################
+#   Homing and Gantry Adjustment Routines
+#####################################################################
+
+[idle_timeout]
+timeout: 1800
+
+[force_move]
+enable_force_move: True
+
+[safe_z_home]
+##  XY Location of the Z Endstop Switch
+##  Update -10,-10 to the XY coordinates of your endstop pin 
+##  (such as 157,305) after going through Z Endstop Pin
+##  Location Definition step.
+# home_xy_position:234,350
+home_xy_position:185,185
+# speed:100
+z_hop: 10
+
+##  Use QUAD_GANTRY_LEVEL to level a gantry.
+##  Min & Max gantry corners - measure from nozzle at MIN (0,0) and 
+##  MAX (250, 250), (300,300), or (350,350) depending on your printer size
+##  to respective belt positions
+[quad_gantry_level]
+gantry_corners:
+   -60,-10
+   410,420
+#  Probe points
+points:
+   50,25
+   50,275
+   300,275
+   300,25
+max_adjust: 15
+
+#--------------------------------------------------------------------
+speed: 100
+horizontal_move_z: 2
+retries: 5
+retry_tolerance: 0.0075
+max_adjust: 10
+
+#### Quad Gantry Leveling Force to do one turn at 8mm above bed
+[gcode_macro QUAD_GANTRY_LEVEL]
+rename_existing: _QUAD_GANTRY_LEVEL
+gcode:
+    SAVE_GCODE_STATE NAME=STATE_QGL
+    BED_MESH_CLEAR
+    # If QGL has not been done yet, correct for any major skew first
+    # at 8mm height
+    {% if not printer.quad_gantry_level.applied %}
+    _QUAD_GANTRY_LEVEL horizontal_move_z=8 retry_tolerance=1      
+    {% endif %}
+    # Complete with a full QGL at the configured height
+    _QUAD_GANTRY_LEVEL
+    RESTORE_GCODE_STATE NAME=STATE_QGL
+
+##--------------------------------------------------------------------
+
+########################################
+# EXP1 / EXP2 (display) pins
+########################################
+
+[board_pins]
+aliases:
+    # EXP1 header
+    EXP1_1=PG9, EXP1_2=PG12,
+    EXP1_3=PG13, EXP1_4=PG14,
+    EXP1_5=PC13, EXP1_6=PC14,    # Slot in the socket on this side
+    EXP1_7=PC15, EXP1_8=PF0,
+    EXP1_9=<GND>, EXP1_10=<5V>,
+
+    # EXP2 header
+    EXP2_1=PA6, EXP2_2=PA5,
+    EXP2_3=PE2, EXP2_4=PE4,
+    EXP2_5=PE3, EXP2_6=PA7,      # Slot in the socket on this side
+    EXP2_7=PE5, EXP2_8=<RST>,
+    EXP2_9=<GND>, EXP2_10=PE4
+
+#####################################################################
+#   Displays
+#####################################################################
+
+##  Uncomment the display that you have
+#--------------------------------------------------------------------
+
+#[display]
+##  RepRapDiscount 128x64 Full Graphic Smart Controller
+#lcd_type: st7920
+#cs_pin: EXP1_4
+#sclk_pin: EXP1_5
+#sid_pin: EXP1_3
+#menu_timeout: 40
+#encoder_pins: ^EXP2_5, ^EXP2_3
+#click_pin: ^!EXP1_2
+
+#[output_pin beeper]
+#pin: EXP1_1
+
+#--------------------------------------------------------------------
+
+#[display]
+##  mini12864 LCD Display
+#lcd_type: uc1701
+#cs_pin: EXP1_3
+#a0_pin: EXP1_4
+#rst_pin: EXP1_5
+#encoder_pins: ^EXP2_5, ^EXP2_3
+#click_pin: ^!EXP1_2
+#contrast: 63
+#spi_software_miso_pin: EXP2_1
+#spi_software_mosi_pin: EXP2_6
+#spi_software_sclk_pin: EXP2_2
+
+#[neopixel btt_mini12864]
+##  To control Neopixel RGB in mini12864 display
+#pin: EXP1_6
+#chain_count: 3
+#initial_RED: 0.1
+#initial_GREEN: 0.5
+#initial_BLUE: 0.0
+#color_order: RGB
+
+##  Set RGB values on boot up for each Neopixel. 
+##  Index 1 = display, Index 2 and 3 = Knob
+#[delayed_gcode setdisplayneopixel]
+#initial_duration: 1
+#gcode:
+#        SET_LED LED=btt_mini12864 RED=1 GREEN=1 BLUE=1 INDEX=1 TRANSMIT=0
+#        SET_LED LED=btt_mini12864 RED=1 GREEN=0 BLUE=0 INDEX=2 TRANSMIT=0
+#        SET_LED LED=btt_mini12864 RED=1 GREEN=0 BLUE=0 INDEX=3 
+
+#--------------------------------------------------------------------
+
+
+#####################################################################
+#   Macros
+#####################################################################
+
+[gcode_macro G32]
+gcode:
+    SAVE_GCODE_STATE NAME=STATE_G32
+    G90
+    G28
+    QUAD_GANTRY_LEVEL
+    CLEAN_NOZZLE
+    G0 X175 Y175 Z30 F3600
+    PROBE_EDDY_NG_TAP
+    BED_MESH_CALIBRATE
+    G0 X175 Y175 Z30 F3600
+    #--------------------------------------------------------------------
+    RESTORE_GCODE_STATE NAME=STATE_G32
+   
+[gcode_macro PRINT_START]
+#   Use PRINT_START for the slicer starting script - please customise for your slicer of choice
+gcode:
+    # park the head to the back right, out of he heated bed area
+    G28
+    G0 X275 Y350 Z100 F6000
+    M104 S150                  ; preheat extruder temp to 150C
+    {% set bed_temp = params.BED|default(60)|float %}
+    M190 S{bed_temp}
+    G32                            ; home all axes
+    G90                            ; absolute positioning
+    G1 Z20 F3000                   ; move nozzle away from bed
+    {% set extruder_temp = params.EXTRUDER|default(200)|float %}
+    M109 S{extruder_temp}         ; set extruder temp
+   
+
+[gcode_macro PRINT_END]
+#   Use PRINT_END for the slicer ending script - please customise for your slicer of choice
+gcode:
+    # safe anti-stringing move coords
+    {% set th = printer.toolhead %}
+    {% set x_safe = th.position.x + 20 * (1 if th.axis_maximum.x - th.position.x > 20 else -1) %}
+    {% set y_safe = th.position.y + 20 * (1 if th.axis_maximum.y - th.position.y > 20 else -1) %}
+    {% set z_safe = [th.position.z + 2, th.axis_maximum.z]|min %}
+    
+    SAVE_GCODE_STATE NAME=STATE_PRINT_END
+    
+    M400                           ; wait for buffer to clear
+    G92 E0                         ; zero the extruder
+    G1 E-5.0 F1800                 ; retract filament
+    
+    TURN_OFF_HEATERS
+    
+    G90                                      ; absolute positioning
+    G0 X{x_safe} Y{y_safe} Z{z_safe} F20000  ; move nozzle to remove stringing
+    G0 X{th.axis_maximum.x//2} Y{th.axis_maximum.y - 2} F3600  ; park nozzle at rear
+    M107                                     ; turn off fan
+    
+    BED_MESH_CLEAR
+    RESTORE_GCODE_STATE NAME=STATE_PRINT_END
+
+[gcode_macro CHOME]
+description: Homes XYZ axis only if printer is in a non-homed state
+gcode:
+  {% if "xyz" not in printer.toolhead.homed_axes %}
+    G28
+  {% endif %}
+
+[gcode_macro FRONT]
+description: Moves the toolhead to the front
+gcode:
+  CHOME
+  {% set x_center = printer.toolhead.axis_maximum.x|float / 2.0 %}
+  {% set y_center = printer.toolhead.axis_maximum.y|float / 2.0 %}
+  G90
+  G1 X{x_center} Y10 F7800
+
+[gcode_macro _LOGO_PENDING]
+gcode:
+  SET_LED LED=rgb_light RED=0.15 GREEN=0.5 BLUE=0.75 WHITE=0 INDEX=1
+
+[gcode_macro _LOGO_READY]
+gcode:
+  SET_LED LED=rgb_light RED=0.99 GREEN=0.0 BLUE=0.0 WHITE=0 INDEX=1
+
+[gcode_macro _LOGO_OFF]
+gcode:
+  SET_LED LED=rgb_light RED=0 GREEN=0 BLUE=0 WHITE=0 INDEX=1
+  
+
+[gcode_macro _HEADLIGHT_ON]
+gcode:
+  SET_LED LED=rgb_light RED=1 GREEN=1 BLUE=1 WHITE=1.0 INDEX=2 TRANSMIT=0
+  SET_LED LED=rgb_light RED=1 GREEN=1 BLUE=1 WHITE=1.0 INDEX=3
+
+
+[gcode_macro _HEADLIGHT_OFF]
+gcode:
+  SET_LED LED=rgb_light RED=0 GREEN=0 BLUE=0 WHITE=0 INDEX=2 TRANSMIT=0
+  SET_LED LED=rgb_light RED=0 GREEN=0 BLUE=0 WHITE=0 INDEX=3
+  
+
+[gcode_macro UNLOAD_FILAMENT]
+description: Unloads filament from toolhead
+gcode:
+  {% set EXTRUDER_TEMP = params.TEMP|default(230)|int %}
+  {% set MIN_TEMP = params.TEMP|default(230)|float * 0.98 %}
+  {% set CURRENT_TARGET = printer.extruder.target|float %}
+  CHOME
+  G91                         ; relative positioning
+  G1 Z20                      ; move nozzle upwards
+  FRONT                       ; move the toolhead to the front
+  {% if EXTRUDER_TEMP != 0 %}
+    _LOGO_PENDING
+    {% if CURRENT_TARGET < EXTRUDER_TEMP %}
+      M104 S{EXTRUDER_TEMP} ; only heat up if the current extruder is not already hot
+    {% endif %}
+    TEMPERATURE_WAIT SENSOR="extruder" MINIMUM={MIN_TEMP} ; wait for min extrude temp to reach
+  {% endif %}
+  _LOGO_READY
+  M83                         ; set extruder to relative mode
+  G1 E10 F300                 ; extrude a little to soften tip
+  G1 E-8 F3600                ; quickly retract a small amount to elimate stringing
+  G4 P200                     ; pause for a short amount of time
+  G1 E-50 F400                ; retract slowly the rest of the way
+  G1 E-25 F300
+  M400                        ; wait for moves to finish
+  M117 Unload Complete!
+  _LOGO_OFF
+
+[gcode_macro LOAD_FILAMENT]
+description: Loads new filament into toolhead
+gcode:
+  {% set EXTRUDER_TEMP = params.TEMP|default(230)|int %}
+  {% set MIN_TEMP = params.TEMP|default(230)|float * 0.98 %}
+  {% set CURRENT_TARGET = printer.extruder.target|float %}
+  FRONT                       ; move the toolhead to the front
+  {% if EXTRUDER_TEMP != 0 %}
+    _LOGO_PENDING
+    {% if CURRENT_TARGET < EXTRUDER_TEMP %}
+      M104 S{EXTRUDER_TEMP} ; only heat up if the current extruder is not already hot
+    {% endif %}
+    TEMPERATURE_WAIT SENSOR="extruder" MINIMUM={MIN_TEMP} ; wait for min extrude temp to reach
+  {% endif %}
+  _LOGO_READY
+  _HEADLIGHT_ON
+  M83                         ; set extruder to relative mode
+  G1 E50 F300                 ; extrude slowlyL
+  G1 E50 F300
+  M400                        ; wait for moves to finish
+  M117 Load Complete!
+  _LOGO_OFF
+  _HEADLIGHT_OFF
+
+
+[bed_mesh]
+mesh_min = 30, 30
+mesh_max = 270, 270
+speed = 900
+horizontal_move_z = 10
+probe_count = 7,7
+algorithm = bicubic
+##[(7x7)-1] / 2 = 24
+##[(5x5)-1] / 2 = 12
+##[(9x9)-1] / 2 = 40
+#relative_reference_index: 40
+zero_reference_position: 150, 150
+#relative_reference_index: 15
+split_delta_z = 0.0125
+move_check_distance = 3
+mesh_pps = 4,4
+fade_start = 0
+fade_end = 2
+fade_target = 0
+
+#*# <---------------------- SAVE_CONFIG ---------------------->
+#*# DO NOT EDIT THIS BLOCK OR BELOW. The contents are auto-generated.
+#*#
+#*# [heater_bed]
+#*#
+#*# [extruder]
+#*#
+#*# [bed_mesh default]
+#*# version = 1
+#*# points =
+#*# 	  -0.064332, -0.064332, -0.064332, -0.064332, -0.064332, -0.064332, 0.000000
+#*# 	  0.000000, 0.000000, -0.022532, -0.022532, -0.022532, -0.022532, 0.000000
+#*# 	  0.063279, 0.063279, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000
+#*# 	  0.112172, 0.063279, 0.063279, 0.000000, 0.000000, 0.000000, 0.000000
+#*# 	  0.173636, 0.125530, 0.125530, 0.063279, 0.063279, 0.063279, 0.063279
+#*# 	  0.234201, 0.173636, 0.173636, 0.125530, 0.125530, 0.125530, 0.125530
+#*# 	  0.293725, 0.293725, 0.234201, 0.234201, 0.234201, 0.234201, 0.234201
+#*# x_count = 7
+#*# y_count = 7
+#*# mesh_x_pps = 4
+#*# mesh_y_pps = 4
+#*# algo = bicubic
+#*# tension = 0.2
+#*# min_x = 30.0
+#*# max_x = 270.0
+#*# min_y = 30.0
+#*# max_y = 270.0
+#*#
+#*# [probe_eddy_ng btt_eddy]
+#*# calibrated_drive_currents = 15, 16, 17
+#*# calibration_version = 5
+#*# reg_drive_current = 16
+#*# tap_drive_current = 17
+#*# calibration_15 = gASVywMAAAAAAAB9lCiMAXaUSwWMBGZ0b2iUjBtudW1weS5wb2x5bm9taWFsLnBvbHlub21pYWyUjApQb2x5bm9taWFslJOUKYGUfZQojARjb2VmlIwWbnVtcHkuX2NvcmUubXVsdGlhcnJheZSMDF9yZWNvbnN0cnVjdJSTlIwFbnVtcHmUjAduZGFycmF5lJOUSwCFlEMBYpSHlFKUKEsBSwqFlGgMjAVkdHlwZZSTlIwCZjiUiYiHlFKUKEsDjAE8lE5OTkr/////Sv////9LAHSUYolDUFWVniProf0/NjGPvLCl/j/Wv1TlWLXkP8DqiqaWE6M/dPidP7CVq7/Nno73+dTkP6sZPtA62tw/s9xFP4LL3r/OSwRcs2fKv47ziNKcXsU/lHSUYowGZG9tYWlulGgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQrkjaQaHRlD6hiY8qYQOVPpR0lGKMBndpbmRvd5RoC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEAAAAAAAAPC/AAAAAAAA8D+UdJRijAdfc3ltYm9slIwBeJSMBnN5bWJvbJRoLHVijAlmdG9oX2hpZ2iUaAUpgZR9lChoCGgLaA5LAIWUaBCHlFKUKEsBSwqFlGgYiUNQu2OI2xw9G0Ay6wDdBYoKQIKPeJU/L/w/yZEiQebu/z8cpmPZ9VStP6MMNbUQkg7AOkitBlnL9z8S6RPINGwbQLV+iP//Fda/a6H2DLjlCMCUdJRiaB1oC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEHvtpO8ZAZU+ra5rorMRlT6UdJRiaCRoC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEAAAAAAAAPC/AAAAAAAA8D+UdJRiaCtoLGgtaCx1YowEaHRvZpRoBSmBlH2UKGgIaAtoDksAhZRoEIeUUpQoSwFLCoWUaBiJQ1B1KheJIfSUPuCVi9aWxxY+sIrAPmo3Ab4MMMy28/C1velFipAWJOS91G05GsNw+z1ap87hAhzjPVS5ilaAY/q9fdu3EwdSzL2KMC7pPrHhPZR0lGJoHWgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQYJuFJyGy2T+2nYNry/oTQJR0lGJoJGgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQAAAAAAAA8L8AAAAAAADwP5R0lGJoK2gsaC1oLHVijAdoX3JhbmdllF2UKEc/2bIhJ4WbYEdALf/7KILBCGWMB2ZfcmFuZ2WUXZQoR0FITQolEfAAR0FIl9PowlgAZYwCZGOUSw91Lg==
+#*# calibration_16 = gASVywMAAAAAAAB9lCiMAXaUSwWMBGZ0b2iUjBtudW1weS5wb2x5bm9taWFsLnBvbHlub21pYWyUjApQb2x5bm9taWFslJOUKYGUfZQojARjb2VmlIwWbnVtcHkuX2NvcmUubXVsdGlhcnJheZSMDF9yZWNvbnN0cnVjdJSTlIwFbnVtcHmUjAduZGFycmF5lJOUSwCFlEMBYpSHlFKUKEsBSwqFlGgMjAVkdHlwZZSTlIwCZjiUiYiHlFKUKEsDjAE8lE5OTkr/////Sv////9LAHSUYolDUNTuluc81fY/39kVkAdX/j/Tn7LdHJnnP6x9rDI9lN8/0TVLxIUtzz/Gt4I0ZCHYv7MzK4bM8ZG/7WcO1Dua6j+eoy4sR7y7Pxs73ciYb9a/lHSUYowGZG9tYWlulGgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQoaW5/97QlD7X4sQxrRuVPpR0lGKMBndpbmRvd5RoC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEAAAAAAAAPC/AAAAAAAA8D+UdJRijAdfc3ltYm9slIwBeJSMBnN5bWJvbJRoLHVijAlmdG9oX2hpZ2iUaAUpgZR9lChoCGgLaA5LAIWUaBCHlFKUKEsBSwqFlGgYiUNQ7Y+sXpc1G0BomV43o4YKQHPlTNkCmfw/w4I5Xcp8AUDRY2oMbHPaP2saSAhorxHAPYW45Sg06j+PudZLEbweQJAFMgS4erc/OrcAZNIuC8CUdJRiaB1oC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDECr9jAQdGZU+A4mUqcQrlT6UdJRiaCRoC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEAAAAAAAAPC/AAAAAAAA8D+UdJRiaCtoLGgtaCx1YowEaHRvZpRoBSmBlH2UKGgIaAtoDksAhZRoEIeUUpQoSwFLCoWUaBiJQ1BktIsAWweVPhFnJy9/yB8+d3bgZ84yD74LW1KVbW34Pb6JkiQyPea9qvMrM/W4371Y0IyeETTUPRIiNBWtSPA9eXlPkydCeT0st4NbPrPkvZR0lGJoHWgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQoH9ImN6+Vz82zMrod/4TQJR0lGJoJGgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQAAAAAAAA8L8AAAAAAADwP5R0lGJoK2gsaC1oLHVijAdoX3JhbmdllF2UKEc/V77emEh/oEdALf8k5O+aI2WMB2ZfcmFuZ2WUXZQoR0FILx6PflAAR0FImLlqufgAZYwCZGOUSxB1Lg==
+#*# calibration_17 = gASVywMAAAAAAAB9lCiMAXaUSwWMBGZ0b2iUjBtudW1weS5wb2x5bm9taWFsLnBvbHlub21pYWyUjApQb2x5bm9taWFslJOUKYGUfZQojARjb2VmlIwWbnVtcHkuX2NvcmUubXVsdGlhcnJheZSMDF9yZWNvbnN0cnVjdJSTlIwFbnVtcHmUjAduZGFycmF5lJOUSwCFlEMBYpSHlFKUKEsBSwqFlGgMjAVkdHlwZZSTlIwCZjiUiYiHlFKUKEsDjAE8lE5OTkr/////Sv////9LAHSUYolDUAusUswyDPU/LHoU1khM/D8IRaPo+v7lPwpVWgB7G+M/wuODavP+5D+PBILRQGPIvy9RjTnrJeO/FSaUBNLr2D+l9o1fQM7bP8dOB+KpS7K/lHSUYowGZG9tYWlulGgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQLQLe0cTElD7dumccqTSVPpR0lGKMBndpbmRvd5RoC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEAAAAAAAAPC/AAAAAAAA8D+UdJRijAdfc3ltYm9slIwBeJSMBnN5bWJvbJRoLHVijAlmdG9oX2hpZ2iUaAUpgZR9lChoCGgLaA5LAIWUaBCHlFKUKEsBSwqFlGgYiUNQ6DvZqsSUGkBZjgQz2CAJQMSJ+A/3MPk/Kwm+fAc1/D/8OZLSJWT0P85d4WnO6gDARXV26o765b8FKpK3fIcOQLWhpSv7PvA/lVbAV83T9L+UdJRiaB1oC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDELRyYcwsMZU+eeCNKE1IlT6UdJRiaCRoC2gOSwCFlGgQh5RSlChLAUsChZRoGIlDEAAAAAAAAPC/AAAAAAAA8D+UdJRiaCtoLGgtaCx1YowEaHRvZpRoBSmBlH2UKGgIaAtoDksAhZRoEIeUUpQoSwFLCoWUaBiJQ1CcWIP2AhmVPq8vXqdzBSY+gKZ2yvBYGb6otIh7UaASPtAMFhKuOPW92VqcMGwFFb7j9sgwBozxPYfk3DnZYBg+hh5kplfx373GUweSf2EEvpR0lGJoHWgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQAAcJvMhKIj+2xU23FvQTQJR0lGJoJGgLaA5LAIWUaBCHlFKUKEsBSwKFlGgYiUMQAAAAAAAA8L8AAAAAAADwP5R0lGJoK2gsaC1oLHVijAdoX3JhbmdllF2UKEc/IkrIvAkHAEdALf/r2O6iQWWMB2ZfcmFuZ2WUXZQoR0FIDrIslTgAR0FIpw6iVkgAZYwCZGOUSxF1Lg==
