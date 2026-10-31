@@ -15,7 +15,7 @@ LDO Voron 2.4 350 mm, Leviathan V1.1. Build volume in config is X/Y 350 mm, Z 33
 
 ## Toolhead
 
-A4T, with a Crossbow filament cutter. The gantry depressor is not configured in Klipper yet.
+A4T, with a Crossbow filament cutter. The depressor is a fixed arm on the left gantry. Happy Hare cuts by increasing Y (`form_tip_macro: _MMU_CUT_TIP`): approach X0 Y324, touch X0 Y330, full press X0 Y345.
 
 | Part | What is fitted | Where it is configured |
 | --- | --- | --- |
